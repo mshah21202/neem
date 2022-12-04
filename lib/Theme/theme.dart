@@ -58,16 +58,16 @@ ButtonStyle secondaryButtonStyle() {
   );
 }
 
-AppBar mainAppBar(BuildContext context) {
+AppBar mainAppBar(BuildContext context, {String title = 'Neem'}) {
   return AppBar(
+    centerTitle: true,
     title: Text(
-      "Neem",
+      title,
       style: Theme.of(context)
           .textTheme
           .headlineLarge!
           .copyWith(color: ColorManager.white),
     ),
-    leading: null,
-    automaticallyImplyLeading: false,
+    automaticallyImplyLeading: true,
   );
 }

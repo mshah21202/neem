@@ -11,10 +11,13 @@ import 'package:neem/Theme/theme.dart';
 import 'package:neem/modules/LogIn/login_screen.dart';
 import 'package:neem/modules/Register/register_cubit.dart';
 import 'package:neem/modules/Register/register_states.dart';
+import 'package:neem/modules/mainLayout/main_layout_screen.dart';
+
+import '../Home/home_screen.dart';
 
 class RegisterScreen extends StatelessWidget {
   RegisterScreen({Key? key}) : super(key: key);
-  final GlobalKey _formKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   TextEditingController nameController = TextEditingController();
@@ -25,8 +28,19 @@ class RegisterScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => RegisterCubit(),
-      child:
-          BlocBuilder<RegisterCubit, RegisterStates>(builder: (context, state) {
+      child: BlocConsumer<RegisterCubit, RegisterStates>(
+          listener: (context, state) {
+        if (state is ErrorRegisterState) {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) => _buildPopupDialog(context),
+          );
+        } else if (state is SuccessRegisterState) {
+          Navigator.of(context)
+              .pushReplacement(MaterialPageRoute(builder: (_) => MainLayout()));
+        }
+      }, builder: (context, state) {
+        RegisterCubit cubit = RegisterCubit.get(context);
         return Scaffold(
           appBar: mainAppBar(context),
           body: SingleChildScrollView(
@@ -61,6 +75,11 @@ class RegisterScreen extends StatelessWidget {
                         ),
                         TextFormField(
                           controller: nameController,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return "Enter your name";
+                            }
+                          },
                           decoration: InputDecoration(label: Text("Name")),
                         ),
                         SizedBox(
@@ -68,6 +87,13 @@ class RegisterScreen extends StatelessWidget {
                         ),
                         TextFormField(
                           controller: usernameController,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return "Enter your username";
+                            } else if (value.length < 5) {
+                              return "Your username should be 5 characters or more";
+                            }
+                          },
                           decoration: InputDecoration(label: Text("Username")),
                         ),
                         SizedBox(
@@ -75,6 +101,15 @@ class RegisterScreen extends StatelessWidget {
                         ),
                         TextFormField(
                           controller: emailController,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return "Enter your email address";
+                            } else if (!RegExp(
+                                    r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
+                                .hasMatch(value)) {
+                              return "Enter a valid email address";
+                            }
+                          },
                           decoration: InputDecoration(label: Text("Email")),
                         ),
                         SizedBox(
@@ -82,6 +117,13 @@ class RegisterScreen extends StatelessWidget {
                         ),
                         TextFormField(
                           controller: phoneController,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return "Enter your phone number";
+                            } else if (!RegExp("[0][0-9]{9}").hasMatch(value)) {
+                              return "Enter a valid number Ex. 07xxxxxxxx";
+                            }
+                          },
                           decoration: InputDecoration(label: Text("Phone")),
                         ),
                         SizedBox(
@@ -89,6 +131,15 @@ class RegisterScreen extends StatelessWidget {
                         ),
                         TextFormField(
                           controller: passwordController,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return "Enter a password";
+                            } else if (!RegExp(
+                                    "^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@\$ %^&*-]).{8,}\$")
+                                .hasMatch(value)) {
+                              return "Minimum 8 characters, at least 1 upper case letter, 1 lower case letter, 1 number and 1 special character";
+                            }
+                          },
                           decoration: InputDecoration(label: Text("Password")),
                           obscureText: true,
                         ),
@@ -98,6 +149,11 @@ class RegisterScreen extends StatelessWidget {
                         TextFormField(
                           decoration:
                               InputDecoration(label: Text("Confirm Password")),
+                          validator: (value) {
+                            if (value != passwordController.text) {
+                              return "Passwords don't match";
+                            }
+                          },
                           obscureText: true,
                         ),
                         SizedBox(
@@ -105,18 +161,22 @@ class RegisterScreen extends StatelessWidget {
                         ),
                         TextButton.icon(
                           onPressed: () {
-                            RegisterCubit cubit = RegisterCubit.get(context);
-                            cubit.register(
-                                email: emailController.text,
-                                password: passwordController.text,
-                                name: nameController.text,
-                                username: usernameController.text,
-                                phone: phoneController.text);
+                            if (_formKey.currentState!.validate()) {
+                              cubit.register(
+                                  email: emailController.text,
+                                  password: passwordController.text,
+                                  name: nameController.text,
+                                  username: usernameController.text,
+                                  phone: phoneController.text);
+                            }
                           },
-                          icon: Icon(
-                            Icons.create,
-                            color: ColorManager.white,
-                          ),
+                          icon: state is RequestRegisterState
+                              ? CircularProgressIndicator(
+                                  color: ColorManager.white)
+                              : Icon(
+                                  Icons.create,
+                                  color: ColorManager.white,
+                                ),
                           label: Text(
                             "Register",
                             style: Theme.of(context)
@@ -157,6 +217,26 @@ class RegisterScreen extends StatelessWidget {
           ),
         );
       }),
+    );
+  }
+
+  Widget _buildPopupDialog(BuildContext context) {
+    return AlertDialog(
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          Text("Something went wrong"),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          child: const Text('Close'),
+        ),
+      ],
     );
   }
 }

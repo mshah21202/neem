@@ -1,3 +1,5 @@
+// ignore_for_file: sort_child_properties_last
+
 import 'package:flutter/material.dart';
 import 'package:flutter/src/foundation/key.dart';
 import 'package:flutter/src/widgets/framework.dart';
@@ -8,6 +10,7 @@ import 'package:neem/Theme/theme.dart';
 import 'package:neem/modules/LogIn/login_screen.dart';
 import 'package:neem/modules/OnBoarding/page_indicator.dart';
 import 'package:neem/modules/OnBoarding/pages_list.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OnBoardingScreen extends StatefulWidget {
   const OnBoardingScreen({Key? key}) : super(key: key);
@@ -48,18 +51,14 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
             ),
             PageIndicator(count: pages.length, pageIndex: index),
             TextButton(
-              onPressed: () {
-                if (index != pages.length - 1)
+              onPressed: () async {
+                if (index != pages.length - 1) {
                   _pageController.nextPage(
                       duration: Duration(milliseconds: 500),
                       curve: Curves.ease);
-                else
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => LogInScreen(),
-                    ),
-                  );
+                } else {
+                  await goLoginPage(context);
+                }
               },
               child: Text(
                 index != pages.length - 1 ? "Next" : "Get Started",
@@ -72,10 +71,8 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
             ),
             (index != pages.length - 1)
                 ? TextButton(
-                    onPressed: () {
-                      _pageController.animateToPage(pages.length - 1,
-                          duration: Duration(milliseconds: 500),
-                          curve: Curves.ease);
+                    onPressed: () async {
+                      await goLoginPage(context);
                     },
                     child: Text(
                       "Skip",
@@ -89,6 +86,17 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
                 : Center()
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> goLoginPage(BuildContext context) async {
+    var prefs = await SharedPreferences.getInstance();
+    prefs.setBool("onBoardingSkip", true);
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LogInScreen(),
       ),
     );
   }
